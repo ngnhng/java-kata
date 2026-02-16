@@ -28,15 +28,18 @@
 
 ```text
 java-kata/
-├── 01-functional-shift/                # Active kata module
-│   ├── build.gradle.kts                # Module build config (java-quality, test deps)
-│   └── src/
-│       ├── main/java/                  # Production code
-│       └── test/java/                  # Unit/integration tests
+├── 01-functional-shift/                # Functional-shift kata group
+│   └── 01-declarative-aggregator/      # Gradle subproject (:01-functional-shift:01-declarative-aggregator)
+│       ├── README.md                   # Kata instructions
+│       ├── build.gradle.kts            # Module build config (java-quality, test deps)
+│       └── src/
+│           ├── main/java/              # Production code
+│           └── test/java/              # Unit/integration tests
 ├── build-logic/                        # Shared convention plugins for all modules
 │   ├── build.gradle.kts                # Build for convention plugins
 │   ├── settings.gradle.kts             # build-logic build settings
-│   └── src/main/kotlin/                # Precompiled Gradle script plugins
+│   └── src/main/kotlin/
+│           └── java-quality.gradle.kts # Precompiled convention plugin (id: java-quality)
 ├── config/                             # Quality and tooling configuration
 │   └── checkstyle/
 │       └── checkstyle.xml              # Checkstyle ruleset
