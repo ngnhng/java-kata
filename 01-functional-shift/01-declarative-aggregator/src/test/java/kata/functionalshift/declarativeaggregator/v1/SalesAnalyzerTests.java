@@ -1,3 +1,3 @@
 package kata.functionalshift.declarativeaggregator.v1;
 
-public class SaleAnalyzerTests {}
+public class SalesAnalyzerTests {}
