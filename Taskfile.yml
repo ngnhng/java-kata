@@ -1,0 +1,62 @@
+# https://taskfile.dev
+version: "3"
+
+vars:
+  GRADLE_CMD: '{{if eq OS "windows"}}gradlew.bat{{else}}./gradlew{{end}}'
+  MODULE: 01-functional-shift
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  tasks:
+    desc: Show all Gradle tasks
+    aliases: [ls]
+    cmds:
+      - "{{.GRADLE_CMD}} tasks --all"
+
+  clean:
+    desc: Clean build outputs
+    cmds:
+      - "{{.GRADLE_CMD}} clean"
+
+  format:
+    desc: Apply Spotless formatting
+    aliases: [fmt]
+    cmds:
+      - "{{.GRADLE_CMD}} spotlessApply"
+
+  format:check:
+    desc: Check formatting with Spotless
+    aliases: [fmt:check]
+    cmds:
+      - "{{.GRADLE_CMD}} spotlessCheck"
+
+  test:
+    desc: Run tests for all modules
+    cmds:
+      - "{{.GRADLE_CMD}} test"
+
+  test:module:
+    desc: Run tests for one module (override with MODULE=<gradle-project-name>)
+    cmds:
+      - "{{.GRADLE_CMD}} :{{.MODULE}}:test"
+
+  check:
+    desc: Run all verification checks (tests + static analysis + formatting checks)
+    cmds:
+      - "{{.GRADLE_CMD}} check"
+
+  build:
+    desc: Build all modules
+    cmds:
+      - "{{.GRADLE_CMD}} build"
+
+  ci:
+    desc: CI-equivalent pipeline (clean + check)
+    cmds:
+      - task: clean
+      - task: check
