@@ -1,4 +1,4 @@
-// Shared Java quality convention for backend modules.
+// Shared Java quality convention for all modules.
 //
 // This file is a precompiled Gradle convention plugin (plugin id: "java-quality").
 // Any module that applies `id("java-quality")` will receive all rules below.
