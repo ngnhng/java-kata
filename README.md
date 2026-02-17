@@ -128,9 +128,9 @@ Idiomatic testing patterns using JUnit 5, Mockito, and ArchUnit.
 
 ---
 
-### 07) Evolutionary Katas (The "Levels" Format)
+### 07) Advanced Katas
 
-End-to-end challenges that start simple (Level 1) and evolve into complex architectural problems (Level 8). These focus on API design, parsing, generics, and extensibility.
+End-to-end challenges that represents complex architectural problems. These focus on API design, parsing, generics, and extensibility.
 
 - [ ] [21 - The Money Kata](./07-evolutionary-katas/21-money-kata) (Precision, Allocation, Multi-Currency)
 - [ ] [22 - Semantic Versioning (SemVer)](./07-evolutionary-katas/22-semver-kata) (Parsing, Comparable, Constraints)
