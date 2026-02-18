@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import kata.functionalshift.declarativeaggregator.domain.vo.DiscountId;
+import kata.functionalshift.declarativeaggregator.domain.vo.LineId;
 import kata.functionalshift.declarativeaggregator.domain.vo.LineKey;
 import kata.functionalshift.declarativeaggregator.domain.vo.Money;
 import kata.functionalshift.declarativeaggregator.domain.vo.OrderId;
@@ -22,48 +23,74 @@ import kata.functionalshift.declarativeaggregator.domain.vo.ProductSnapshot;
  */
 public final class Order {
   private final OrderId id;
-  private final Map<LineKey, OrderLine> lines;
   private final OrderStatus status;
 
-  public Order(OrderId id, Map<LineKey, OrderLine> lines, OrderStatus status) {
+  /** Optimistic concurrency control */
+  private final int version;
+
+  // Helps merge same item added twice
+  private final Map<LineKey, LineId> primaryLineForKey;
+  private final Map<LineId, OrderLine> lines;
+
+  public Order(
+      OrderId id,
+      Map<LineKey, LineId> primaryLineForKey,
+      Map<LineId, OrderLine> lines,
+      OrderStatus status,
+      int version) {
     this.id = Objects.requireNonNull(id, "Order ID is required");
     this.status = Objects.requireNonNull(status, "Order Status is required");
+
     Objects.requireNonNull(lines, "Order Lines cannot be null");
+    Objects.requireNonNull(primaryLineForKey, "Order primaryLineForKey cannot be null");
+
+    this.primaryLineForKey =
+        Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(primaryLineForKey)));
     this.lines = Collections.unmodifiableMap(new LinkedHashMap<>(Objects.requireNonNull(lines)));
 
     if (lines.isEmpty() && OrderStatus.SHIPPED.equals(status)) {
       throw new IllegalStateException("Cannot ship an empty order");
     }
+    this.version = version;
   }
 
-  public Order add(ProductSnapshot product, int quantity, DiscountId discountId) {
-    Objects.requireNonNull(product, "product is required");
+  public Order add(ProductSnapshot productSnapshot, int quantity, DiscountId discountId) {
+    Objects.requireNonNull(productSnapshot, "product is required");
     if (quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
 
-    var key = new LineKey(product, discountId);
-    var next = new LinkedHashMap<>(this.lines);
+    LineKey key = new LineKey(productSnapshot, discountId);
+    LinkedHashMap<LineKey, LineId> nextPrimaryLineForKey =
+        new LinkedHashMap<>(this.primaryLineForKey);
 
-    next.merge(
-        key,
-        new OrderLine(key, quantity),
+    LineId id = this.primaryLineForKey.getOrDefault(key, LineId.newRandom());
+
+    LinkedHashMap<LineId, OrderLine> nextLines = new LinkedHashMap<>(this.lines);
+
+    nextLines.merge(
+        id,
+        new OrderLine(id, key, 0),
         (oldLine, newLine) -> oldLine.increaseBy(newLine.quantity()));
 
-    return new Order(this.id, next, this.status);
+    return new Order(this.id, nextPrimaryLineForKey, nextLines, this.status, this.version);
   }
 
   public Order setQuantity(ProductSnapshot product, int quantity, DiscountId discountId) {
     Objects.requireNonNull(product, "product is required");
     var key = new LineKey(product, discountId);
+    LineId id = this.primaryLineForKey.getOrDefault(key, null);
+    if (id == null) {
+      throw new IllegalArgumentException("Product does not exist in order");
+    }
 
     var next = new LinkedHashMap<>(this.lines);
     if (quantity <= 0) {
-      next.remove(key); // common UX: set to 0 => remove
+      next.remove(id); // common UX: set to 0 => remove
     } else {
-      var existing = next.get(key);
+      var existing = next.get(id);
       if (existing == null) throw new IllegalArgumentException("Line not found");
-      next.put(key, existing.withQuantity(quantity));
+      next.put(id, existing.withQuantity(quantity));
     }
-    return new Order(this.id, next, this.status);
+    return new Order(this.id, this.primaryLineForKey, next, this.status, this.version);
   }
 
   public Instant creationInstant() {

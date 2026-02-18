@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import kata.functionalshift.declarativeaggregator.domain.Order;
 import kata.functionalshift.declarativeaggregator.domain.OrderStatus;
+import kata.functionalshift.declarativeaggregator.domain.vo.LineId;
 import kata.functionalshift.declarativeaggregator.domain.vo.LineKey;
 import kata.functionalshift.declarativeaggregator.domain.vo.Money;
 import kata.functionalshift.declarativeaggregator.domain.vo.OrderId;
@@ -114,11 +115,14 @@ class SalesAnalyzerTests {
 
   private static Order order(
       String orderKey, LocalDate creationDate, OrderStatus status, OrderLine... lines) {
-    Map<LineKey, OrderLine> lineMap = new LinkedHashMap<>();
+    Map<LineKey, LineId> primaryLineForKey = new LinkedHashMap<>();
+    Map<LineId, OrderLine> lineMap = new LinkedHashMap<>();
     for (OrderLine line : lines) {
-      lineMap.put(line.key(), line);
+      primaryLineForKey.put(line.key(), line.id());
+      lineMap.put(line.id(), line);
     }
-    return new Order(new OrderId(uuidV7(orderKey, creationDate)), lineMap, status);
+    return new Order(
+        new OrderId(uuidV7(orderKey, creationDate)), primaryLineForKey, lineMap, status, 0);
   }
 
   private static Order order(String orderKey, OrderStatus status, OrderLine... lines) {
@@ -132,7 +136,7 @@ class SalesAnalyzerTests {
   }
 
   private static OrderLine lineItem(ProductSnapshot product, int quantity) {
-    return new OrderLine(new LineKey(product, null), quantity);
+    return new OrderLine(LineId.newRandom(), new LineKey(product, null), quantity);
   }
 
   private static ProductSnapshot product(String id, String price) {

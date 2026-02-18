@@ -33,7 +33,7 @@ public class SalesAnalyzer {
     return orders.stream()
         .flatMap(o -> o.lines().stream())
         .distinct()
-        .map(line -> line.key().product())
+        .map(line -> line.key().productSnapshot())
         .distinct()
         .toList();
   }
