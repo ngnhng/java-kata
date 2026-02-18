@@ -1,8 +1,11 @@
 plugins { id("java-quality") }
 
 dependencies {
+  implementation(libs.java.uuid.generator)
+
   testImplementation(platform(libs.spring.boot.bom))
   testImplementation(libs.spring.boot.starter.test)
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.test { useJUnitPlatform() }

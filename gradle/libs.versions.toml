@@ -17,6 +17,7 @@ resilience4j = "2.3.0"
 liquibase = "4.31.1"
 testcontainers = "1.21.3"
 wiremock = "3.13.1"
+javaUUIDGenerator = "5.2.0"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }
@@ -54,6 +55,7 @@ resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", ver
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
 wiremock = { module = "org.wiremock:wiremock", version.ref = "wiremock" }
+java-uuid-generator = { module = "com.fasterxml.uuid:java-uuid-generator", version.ref = "javaUUIDGenerator" }
 
 [bundles]
 

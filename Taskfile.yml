@@ -38,7 +38,7 @@ tasks:
   test:
     desc: Run tests for all modules
     cmds:
-      - "{{.GRADLE_CMD}} test"
+      - "{{.GRADLE_CMD}} test --no-configuration-cache --rerun-tasks"
 
   test:module:
     desc: Run tests for one module (override with MODULE=<gradle-project-name>)
