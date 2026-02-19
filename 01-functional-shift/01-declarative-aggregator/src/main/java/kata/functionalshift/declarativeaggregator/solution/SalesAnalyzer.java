@@ -1,4 +1,4 @@
-package kata.functionalshift.declarativeaggregator.solution.v1;
+package kata.functionalshift.declarativeaggregator.solution;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -6,8 +6,10 @@ import kata.functionalshift.declarativeaggregator.domain.Order;
 import kata.functionalshift.declarativeaggregator.domain.OrderStatus;
 import kata.functionalshift.declarativeaggregator.domain.vo.ProductSnapshot;
 
-/** Level 1 SalesAnalyzer sample solution by author. */
+/** SalesAnalyzer sample solution by author. */
 public class SalesAnalyzer {
+
+  // --- Level 1 ---
 
   /**
    * Tries to count the number of orders with the provided status.
@@ -20,6 +22,12 @@ public class SalesAnalyzer {
     return orders.stream().distinct().filter((o) -> o.status().equals(status)).count();
   }
 
+  /**
+   * Calculates total gross revenue from all non-empty orders.
+   *
+   * @param orders The order List.
+   * @return The gross revenue before discounts.
+   */
   public static BigDecimal calculateTotalRevenue(List<Order> orders) {
     return orders.stream()
         .distinct()
@@ -29,6 +37,12 @@ public class SalesAnalyzer {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
+  /**
+   * Collects distinct products sold across all order lines.
+   *
+   * @param orders The order List.
+   * @return The distinct products present in sales.
+   */
   public static List<ProductSnapshot> getDistinctProductsSold(List<Order> orders) {
     return orders.stream()
         .flatMap(o -> o.lines().stream())
@@ -37,4 +51,6 @@ public class SalesAnalyzer {
         .distinct()
         .toList();
   }
+
+  // --- Level 2 ----
 }

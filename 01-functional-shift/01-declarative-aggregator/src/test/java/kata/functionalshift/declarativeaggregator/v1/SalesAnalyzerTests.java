@@ -20,7 +20,7 @@ import kata.functionalshift.declarativeaggregator.domain.vo.OrderId;
 import kata.functionalshift.declarativeaggregator.domain.vo.OrderLine;
 import kata.functionalshift.declarativeaggregator.domain.vo.ProductSnapshot;
 import kata.functionalshift.declarativeaggregator.domain.vo.Sku;
-import kata.functionalshift.declarativeaggregator.solution.v1.SalesAnalyzer;
+import kata.functionalshift.declarativeaggregator.solution.SalesAnalyzer;
 import org.junit.jupiter.api.Test;
 
 class SalesAnalyzerTests {

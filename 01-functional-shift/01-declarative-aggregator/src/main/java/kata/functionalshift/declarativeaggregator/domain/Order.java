@@ -19,19 +19,20 @@ import kata.functionalshift.declarativeaggregator.domain.vo.ProductSnapshot;
  *
  * <p>Immutable entities can happen such as when the entity holds a historic transitional point. For
  * example, adding a new LineItem to the List cannot change the fact that there was once a List
- * without that new LineItem
+ * without that new LineItem.
  */
 public final class Order {
   private final OrderId id;
   private final OrderStatus status;
 
-  /** Optimistic concurrency control */
+  /** Optimistic concurrency control. */
   private final int version;
 
   // Helps merge same item added twice
   private final Map<LineKey, LineId> primaryLineForKey;
   private final Map<LineId, OrderLine> lines;
 
+  /** Creates an immutable order from identity, lines, status, and version metadata. */
   public Order(
       OrderId id,
       Map<LineKey, LineId> primaryLineForKey,
@@ -54,9 +55,12 @@ public final class Order {
     this.version = version;
   }
 
+  /** Adds quantity of a product line and returns a new immutable order instance. */
   public Order add(ProductSnapshot productSnapshot, int quantity, DiscountId discountId) {
     Objects.requireNonNull(productSnapshot, "product is required");
-    if (quantity <= 0) throw new IllegalArgumentException("Quantity must be positive");
+    if (quantity <= 0) {
+      throw new IllegalArgumentException("Quantity must be positive");
+    }
 
     LineKey key = new LineKey(productSnapshot, discountId);
     LinkedHashMap<LineKey, LineId> nextPrimaryLineForKey =
@@ -74,6 +78,7 @@ public final class Order {
     return new Order(this.id, nextPrimaryLineForKey, nextLines, this.status, this.version);
   }
 
+  /** Sets line quantity for a product and returns a new immutable order instance. */
   public Order setQuantity(ProductSnapshot product, int quantity, DiscountId discountId) {
     Objects.requireNonNull(product, "product is required");
     var key = new LineKey(product, discountId);
@@ -87,28 +92,35 @@ public final class Order {
       next.remove(id); // common UX: set to 0 => remove
     } else {
       var existing = next.get(id);
-      if (existing == null) throw new IllegalArgumentException("Line not found");
+      if (existing == null) {
+        throw new IllegalArgumentException("Line not found");
+      }
       next.put(id, existing.withQuantity(quantity));
     }
     return new Order(this.id, this.primaryLineForKey, next, this.status, this.version);
   }
 
+  /** Returns the order creation time encoded in the order identifier. */
   public Instant creationInstant() {
     return id.creationInstant();
   }
 
+  /** Returns the order identifier. */
   public OrderId id() {
     return id;
   }
 
+  /** Returns the current lines as an immutable list copy. */
   public List<OrderLine> lines() {
     return List.copyOf(lines.values());
   }
 
+  /** Returns the current order status. */
   public OrderStatus status() {
     return status;
   }
 
+  /** Returns total gross amount before discount for all lines. */
   public Money totalBeforeDiscount() {
     return lines.values().stream()
         .map(OrderLine::totalBeforeDiscount)

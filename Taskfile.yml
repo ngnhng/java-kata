@@ -48,7 +48,7 @@ tasks:
   check:
     desc: Run all verification checks (tests + static analysis + formatting checks)
     cmds:
-      - "{{.GRADLE_CMD}} check"
+      - "{{.GRADLE_CMD}} check --no-configuration-cache --rerun-tasks"
 
   build:
     desc: Build all modules
