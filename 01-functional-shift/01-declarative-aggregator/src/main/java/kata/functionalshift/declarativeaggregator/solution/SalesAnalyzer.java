@@ -2,8 +2,11 @@ package kata.functionalshift.declarativeaggregator.solution;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import kata.functionalshift.declarativeaggregator.domain.Order;
 import kata.functionalshift.declarativeaggregator.domain.OrderStatus;
+import kata.functionalshift.declarativeaggregator.domain.vo.OrderId;
 import kata.functionalshift.declarativeaggregator.domain.vo.ProductSnapshot;
 
 /** SalesAnalyzer sample solution by author. */
@@ -53,4 +56,24 @@ public class SalesAnalyzer {
   }
 
   // --- Level 2 ----
+
+  public static Map<OrderStatus, List<OrderId>> groupOrderIdsByStatus(List<Order> orders) {
+    return orders.stream()
+        .distinct()
+        .collect(
+            Collectors.groupingBy(
+                o -> o.status(), Collectors.mapping(o -> o.id(), Collectors.toList())));
+  }
+
+  // --- Level 3 ---
+
+  public static Map<OrderStatus, BigDecimal> calculateRevenueByStatus(List<Order> orders) {
+    return orders.stream()
+        .distinct()
+        .collect(
+            Collectors.groupingBy(
+                Order::status,
+                Collectors.reducing(
+                    BigDecimal.ZERO, o -> o.totalBeforeDiscount().amount(), BigDecimal::add)));
+  }
 }

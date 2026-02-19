@@ -1,10 +1,10 @@
 package kata.functionalshift.declarativeaggregator.v1;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.uuid.Generators;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.Currency;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -77,35 +77,11 @@ class SalesAnalyzerTests {
   }
 
   @Test
-  void countOrdersByStatusTreatsSameOrderDataOnDifferentCreationDatesAsDistinct() {
-    ProductSnapshot book = product("p-1", "10.00");
-
-    Order firstDay = order("o-1", LocalDate.of(2026, 1, 1), OrderStatus.NEW, lineItem(book, 1));
-    Order secondDay = order("o-1", LocalDate.of(2026, 1, 2), OrderStatus.NEW, lineItem(book, 1));
-
-    long count = SalesAnalyzer.countOrdersByStatus(List.of(firstDay, secondDay), OrderStatus.NEW);
-
-    assertThat(count).isEqualTo(2L);
-  }
-
-  @Test
-  void calculateTotalRevenueIncludesOrdersWithDifferentCreationDates() {
-    ProductSnapshot book = product("p-1", "10.00");
-
-    Order firstDay = order("o-1", LocalDate.of(2026, 1, 1), OrderStatus.NEW, lineItem(book, 1));
-    Order secondDay = order("o-1", LocalDate.of(2026, 1, 2), OrderStatus.NEW, lineItem(book, 1));
-
-    BigDecimal revenue = SalesAnalyzer.calculateTotalRevenue(List.of(firstDay, secondDay));
-
-    assertThat(revenue).isEqualByComparingTo(new BigDecimal("20.00"));
-  }
-
-  @Test
   void getDistinctProductsSoldStillReturnsUniqueProductsAcrossDifferentCreationDates() {
     ProductSnapshot book = product("p-1", "10.00");
 
-    Order firstDay = order("o-1", LocalDate.of(2026, 1, 1), OrderStatus.NEW, lineItem(book, 1));
-    Order secondDay = order("o-2", LocalDate.of(2026, 1, 2), OrderStatus.NEW, lineItem(book, 2));
+    Order firstDay = order("o-1", OrderStatus.NEW, lineItem(book, 1));
+    Order secondDay = order("o-2", OrderStatus.NEW, lineItem(book, 2));
 
     List<ProductSnapshot> products =
         SalesAnalyzer.getDistinctProductsSold(List.of(firstDay, secondDay));
@@ -113,26 +89,77 @@ class SalesAnalyzerTests {
     assertThat(products).containsExactly(book);
   }
 
-  private static Order order(
-      String orderKey, LocalDate creationDate, OrderStatus status, OrderLine... lines) {
+  @Test
+  void groupOrderIdsByStatusReturnsCorrectMappingAcrossOrders() {
+    Order firstNew = order("o-1", OrderStatus.NEW, lineItem(product("p-1", "10.00"), 1));
+    Order shipped = order("o-2", OrderStatus.SHIPPED, lineItem(product("p-2", "20.00"), 1));
+    Order secondNew = order("o-3", OrderStatus.NEW, lineItem(product("p-3", "30.00"), 1));
+    Order firstDuplicate = order("o-1", OrderStatus.NEW, lineItem(product("p-1", "10.00"), 1));
+
+    Map<OrderStatus, List<OrderId>> mapping =
+        SalesAnalyzer.groupOrderIdsByStatus(List.of(firstNew, shipped, secondNew, firstDuplicate));
+
+    assertThat(mapping).containsOnlyKeys(OrderStatus.NEW, OrderStatus.SHIPPED);
+    assertThat(mapping.get(OrderStatus.NEW)).containsExactly(firstNew.id(), secondNew.id());
+    assertThat(mapping.get(OrderStatus.SHIPPED)).containsExactly(shipped.id());
+  }
+
+  @Test
+  void calculateRevenueByStatusReturnsEmptyMapForEmptyInput() {
+    Map<OrderStatus, BigDecimal> revenueByStatus =
+        SalesAnalyzer.calculateRevenueByStatus(List.of());
+
+    assertThat(revenueByStatus).isEmpty();
+  }
+
+  @Test
+  void calculateRevenueByStatusSumsTotalsPerStatusAcrossDistinctOrders() {
+    Order firstNew = order("o-1", OrderStatus.NEW, lineItem(product("p-1", "10.00"), 2));
+    Order firstDuplicate = order("o-1", OrderStatus.NEW, lineItem(product("p-1", "10.00"), 2));
+    Order secondNew = order("o-2", OrderStatus.NEW, lineItem(product("p-2", "7.50"), 2));
+    Order shipped = order("o-3", OrderStatus.SHIPPED, lineItem(product("p-3", "20.00"), 1));
+
+    Map<OrderStatus, BigDecimal> revenueByStatus =
+        SalesAnalyzer.calculateRevenueByStatus(
+            List.of(firstNew, firstDuplicate, secondNew, shipped));
+
+    assertThat(revenueByStatus)
+        .containsEntry(OrderStatus.NEW, new BigDecimal("35.00"))
+        .containsEntry(OrderStatus.SHIPPED, new BigDecimal("20.00"));
+  }
+
+  @Test
+  void calculateRevenueByStatusOmitsStatusesWithoutOrders() {
+    Order newOrder = order("o-1", OrderStatus.NEW, lineItem(product("p-1", "10.00"), 1));
+
+    Map<OrderStatus, BigDecimal> revenueByStatus =
+        SalesAnalyzer.calculateRevenueByStatus(List.of(newOrder));
+
+    assertThat(revenueByStatus).containsOnlyKeys(OrderStatus.NEW);
+  }
+
+  @Test
+  void calculateRevenueByStatusThrowsWhenOrderHasNoLines() {
+    Order emptyOrder = order("o-1", OrderStatus.NEW);
+
+    assertThatThrownBy(() -> SalesAnalyzer.calculateRevenueByStatus(List.of(emptyOrder)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Cannot total an empty order");
+  }
+
+  private static Order order(String orderKey, OrderStatus status, OrderLine... lines) {
     Map<LineKey, LineId> primaryLineForKey = new LinkedHashMap<>();
     Map<LineId, OrderLine> lineMap = new LinkedHashMap<>();
     for (OrderLine line : lines) {
       primaryLineForKey.put(line.key(), line.id());
       lineMap.put(line.id(), line);
     }
-    return new Order(
-        new OrderId(uuidV7(orderKey, creationDate)), primaryLineForKey, lineMap, status, 0);
+    return new Order(new OrderId(uuidV7(orderKey)), primaryLineForKey, lineMap, status, 0);
   }
 
-  private static Order order(String orderKey, OrderStatus status, OrderLine... lines) {
-    return order(orderKey, LocalDate.of(2026, 1, 1), status, lines);
-  }
-
-  private static UUID uuidV7(String orderKey, LocalDate creationDate) {
-    String key = orderKey + "|" + creationDate;
+  private static UUID uuidV7(String orderKey) {
     return IDS.computeIfAbsent(
-        key, ignored -> Generators.timeBasedEpochRandomGenerator().generate());
+        orderKey, ignored -> Generators.timeBasedEpochRandomGenerator().generate());
   }
 
   private static OrderLine lineItem(ProductSnapshot product, int quantity) {
